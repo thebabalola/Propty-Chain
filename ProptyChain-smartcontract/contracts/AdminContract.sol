@@ -140,6 +140,7 @@ contract AdminContract is Ownable, ReentrancyGuard, Pausable {
     event WithdrawalApproved(uint32 indexed proposalId, address indexed admin);
     event WithdrawalExecuted(uint32 indexed proposalId, uint96 amount);
     event ConfigUpdated(string config, uint256 oldValue, uint256 newValue);
+    event ContractAddressUpdated(string contractName, address oldAddress, address newAddress);
 
     // Errors
     error NotAdmin();
@@ -169,15 +170,18 @@ contract AdminContract is Ownable, ReentrancyGuard, Pausable {
     }
 
     modifier onlyAdmin() {
-        bool isAdmin;
+        if (!isAdmin(msg.sender)) revert NotAdmin();
+        _;
+    }
+
+    // Check if address is admin
+    function isAdmin(address account) public view returns (bool) {
         for (uint8 i = 0; i < adminCount; i++) {
-            if (admin[i] == msg.sender) {
-                isAdmin = true;
-                break;
+            if (admin[i] == account) {
+                return true;
             }
         }
-        if (!isAdmin) revert NotAdmin();
-        _;
+        return false;
     }
 
     // Constructor
@@ -187,7 +191,7 @@ contract AdminContract is Ownable, ReentrancyGuard, Pausable {
         adminCount = 1;
     }
 
-    // Set contract addresses
+    // Set all contract addresses at once
     function setContracts(
         address _userRegistry,
         address _propertyFactory,
@@ -206,6 +210,61 @@ contract AdminContract is Ownable, ReentrancyGuard, Pausable {
         reviewRegistry = ReviewRegistry(_reviewRegistry);
         propertyEscrow = PropertyEscrow(_propertyEscrow);
         soulboundNFT = SoulboundNFT(_soulboundNFT);
+
+        emit ConfigUpdated("allContracts", 0, 1);
+    }
+
+    // Update individual contract addresses
+    function updateUserRegistry(address _userRegistry) external onlyAdmin {
+        if (_userRegistry == address(0)) revert InvalidAddress();
+        address oldAddress = address(userRegistry);
+        userRegistry = UserRegistry(_userRegistry);
+        emit ConfigUpdated("userRegistry", uint256(uint160(oldAddress)), uint256(uint160(_userRegistry)));
+    }
+
+    function updatePropertyFactory(address _propertyFactory) external onlyAdmin {
+        if (_propertyFactory == address(0)) revert InvalidAddress();
+        address oldAddress = address(propertyFactory);
+        propertyFactory = PropertyNFTFactory(_propertyFactory);
+        emit ConfigUpdated("propertyFactory", uint256(uint160(oldAddress)), uint256(uint160(_propertyFactory)));
+    }
+
+    function updateReviewRegistry(address _reviewRegistry) external onlyAdmin {
+        if (_reviewRegistry == address(0)) revert InvalidAddress();
+        address oldAddress = address(reviewRegistry);
+        reviewRegistry = ReviewRegistry(_reviewRegistry);
+        emit ConfigUpdated("reviewRegistry", uint256(uint160(oldAddress)), uint256(uint160(_reviewRegistry)));
+    }
+
+    function updatePropertyEscrow(address _propertyEscrow) external onlyAdmin {
+        if (_propertyEscrow == address(0)) revert InvalidAddress();
+        address oldAddress = address(propertyEscrow);
+        propertyEscrow = PropertyEscrow(_propertyEscrow);
+        emit ConfigUpdated("propertyEscrow", uint256(uint160(oldAddress)), uint256(uint160(_propertyEscrow)));
+    }
+
+    function updateSoulboundNFT(address _soulboundNFT) external onlyAdmin {
+        if (_soulboundNFT == address(0)) revert InvalidAddress();
+        address oldAddress = address(soulboundNFT);
+        soulboundNFT = SoulboundNFT(_soulboundNFT);
+        emit ConfigUpdated("soulboundNFT", uint256(uint160(oldAddress)), uint256(uint160(_soulboundNFT)));
+    }
+
+    // Get all contract addresses
+    function getContractAddresses() external view returns (
+        address userRegistryAddr,
+        address propertyFactoryAddr,
+        address reviewRegistryAddr,
+        address propertyEscrowAddr,
+        address soulboundNFTAddr
+    ) {
+        return (
+            address(userRegistry),
+            address(propertyFactory),
+            address(reviewRegistry),
+            address(propertyEscrow),
+            address(soulboundNFT)
+        );
     }
 
     // Create a dispute

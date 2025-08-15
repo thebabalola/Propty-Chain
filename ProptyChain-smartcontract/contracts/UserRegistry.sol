@@ -3,6 +3,7 @@ pragma solidity ^0.8.28;
 
 import "@openzeppelin/contracts/access/Ownable.sol";
 
+import "./AdminContract.sol";
 
 // User identity and reputation management system
 contract UserRegistry is Ownable {
@@ -30,6 +31,9 @@ contract UserRegistry is Ownable {
     mapping(address => uint256) public addressToUserId;
     mapping(uint256 => User) public users;
     mapping(address => bool) public isRegistered;
+    
+    // Admin contract reference
+    AdminContract public adminContract;
     
     // Events
     event UserRegistered(
@@ -65,12 +69,14 @@ contract UserRegistry is Ownable {
     }
 
     modifier onlyAdmin() {
-        require(owner() == msg.sender, "Only admin can perform this action");
+        require(adminContract.isAdmin(msg.sender), "Only admin can perform this action");
         _;
     }
 
     // Constructor
-    constructor() Ownable(msg.sender) {}
+    constructor(address payable _adminContract) Ownable(msg.sender) {
+        adminContract = AdminContract(_adminContract);
+    }
 
     // Register a new user
     function registerUser(

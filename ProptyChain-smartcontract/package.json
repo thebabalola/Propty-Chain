@@ -7,13 +7,9 @@
     "compile": "hardhat compile",
     "test": "hardhat test",
     "deploy": "hardhat ignition deploy ignition/modules/DeployProptyChain.ts",
-    "deploy:base-sepolia": "hardhat ignition deploy ignition/modules/DeployProptyChain.ts --network baseSepolia",
-    "deploy:base": "hardhat ignition deploy ignition/modules/DeployProptyChain.ts --network base",
-    "deploy:lisk": "hardhat ignition deploy ignition/modules/DeployProptyChain.ts --network lisk",
-    "deploy-and-verify:base-sepolia": "hardhat run scripts/deploy-and-verify.ts --network baseSepolia",
-    "deploy-and-verify:base": "hardhat run scripts/deploy-and-verify.ts --network base",
-    "deploy-and-verify:lisk": "hardhat run scripts/deploy-and-verify.ts --network lisk",
-    "verify:base-sepolia": "hardhat verify --network baseSepolia",
+    "deploy:mantle-sepolia": "hardhat ignition deploy ignition/modules/DeployProptyChain.ts --network mantleSepolia",
+    "deploy-and-verify:mantle-sepolia": "hardhat run scripts/deploy-and-verify.ts --network mantleSepolia",
+    "verify:mantle-sepolia": "hardhat verify --network mantleSepolia",
     "size": "hardhat size-contracts",
     "clean": "hardhat clean"
   },
@@ -23,5 +19,8 @@
     "dotenv": "^17.2.1",
     "hardhat": "^2.26.3",
     "hardhat-contract-sizer": "^2.10.1"
+  },
+  "dependencies": {
+    "@chainlink/contracts": "^1.4.0"
   }
 }

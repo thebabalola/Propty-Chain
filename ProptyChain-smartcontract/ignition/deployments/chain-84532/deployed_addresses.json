@@ -1,8 +1,8 @@
 {
-  "ProptyChain#AdminContract": "0x48866a7aB8aDb8F2Eb8708BBc69eafB8BA3C7365",
-  "ProptyChain#UserRegistry": "0xB1bcc419096785a0e43d441F81b69f539773d299",
-  "ProptyChain#PropertyNFTFactory": "0x667D663405AeeB90d6Af2D31f21C5C2bE809A5e0",
-  "ProptyChain#ReviewRegistry": "0x78702F5e1fC795C2bb23f2B342bcFB57BB8dCaC1",
-  "ProptyChain#SoulboundNFT": "0x65e4c8bb0270bC60Af5DCe60CE6323f2BA720171",
-  "ProptyChain#PropertyEscrow": "0x778269B6Fb31089714d4cd3FaC63d0ab602e9E8d"
+  "ProptyChain#AdminContract": "0xA77887A7fFb3B5A2fE1eb8583cB30bE87757375A",
+  "ProptyChain#UserRegistry": "0x5f49433DE0a5E929755151dA65FCeCE4cBDDE86C",
+  "ProptyChain#PropertyNFTFactory": "0x184f13EB25818c21E7173FAe218C5e0eC2fB5E8a",
+  "ProptyChain#ReviewRegistry": "0xc107056C3E971462cca43F998FbA81b44826f117",
+  "ProptyChain#SoulboundNFT": "0x5Fa1e2D008e24baf4BB81CfBCE037BdaF9b6851c",
+  "ProptyChain#PropertyEscrow": "0xb56f1B61B35c71e2209578132D3cE46B7B895208"
 }

@@ -4,20 +4,21 @@ export default buildModule("ProptyChain", (m) => {
   // Deploy AdminContract first (needs initial admin address)
   const adminContract = m.contract("AdminContract", [m.getAccount(0)]);
 
-  // Deploy UserRegistry
-  const userRegistry = m.contract("UserRegistry");
+  // Deploy UserRegistry with AdminContract
+  const userRegistry = m.contract("UserRegistry", [adminContract]);
 
-  // Deploy PropertyNFTFactory with UserRegistry dependency
-  const propertyFactory = m.contract("PropertyNFTFactory", [userRegistry]);
+  // Deploy PropertyNFTFactory with UserRegistry and AdminContract
+  // Note: Chainlink feed addresses will be set dynamically after deployment
+  const propertyFactory = m.contract("PropertyNFTFactory", [userRegistry, adminContract]);
 
-  // Deploy ReviewRegistry with UserRegistry dependency
-  const reviewRegistry = m.contract("ReviewRegistry", [userRegistry]);
+  // Deploy ReviewRegistry with UserRegistry and AdminContract
+  const reviewRegistry = m.contract("ReviewRegistry", [userRegistry, adminContract]);
 
-  // Deploy PropertyEscrow with UserRegistry and PropertyNFTFactory dependencies
-  const propertyEscrow = m.contract("PropertyEscrow", [userRegistry, propertyFactory]);
+  // Deploy PropertyEscrow with UserRegistry, PropertyNFTFactory, and AdminContract
+  const propertyEscrow = m.contract("PropertyEscrow", [userRegistry, propertyFactory, adminContract]);
 
-  // Deploy SoulboundNFT with UserRegistry dependency
-  const soulboundNFT = m.contract("SoulboundNFT", [userRegistry]);
+  // Deploy SoulboundNFT with UserRegistry and AdminContract
+  const soulboundNFT = m.contract("SoulboundNFT", [userRegistry, adminContract]);
 
   // Set up contract relationships in AdminContract
   m.call(adminContract, "setContracts", [

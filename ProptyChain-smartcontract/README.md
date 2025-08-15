@@ -1,6 +1,6 @@
 # ProptyChain Smart Contracts
 
-A comprehensive Web3-powered real estate platform built on Ethereum Layer-2 networks (Base and Lisk) that brings transparency, trust, and accessibility to global property markets.
+A comprehensive Web3-powered real estate platform built on Ethereum Layer-2 networks (Mantle) that brings transparency, trust, and accessibility to global property markets.
 
 ## 🏗️ Architecture Overview
 
@@ -15,16 +15,15 @@ ProptyChain consists of six core smart contracts that work together to create a 
 5. **SoulboundNFT** - Achievement-based gamification system
 6. **AdminContract** - Platform oversight and dispute resolution
 
-### 🚀 Live Deployment (Base Sepolia)
+### 🚀 Live Deployment (Mantle Sepolia)
+The following contracts have been deployed to the Mantle Network:
 
-| Contract | Address | Status |
-|----------|---------|--------|
-| **AdminContract** | `0x48866a7aB8aDb8F2Eb8708BBc69eafB8BA3C7365` | ✅ Verified |
-| **UserRegistry** | `0xB1bcc419096785a0e43d441F81b69f539773d299` | ✅ Verified |
-| **PropertyNFTFactory** | `0x667D663405AeeB90d6Af2D31f21C5C2bE809A5e0` | ✅ Verified |
-| **ReviewRegistry** | `0x78702F5e1fC795C2bb23f2B342bcFB57BB8dCaC1` | ✅ Verified |
-| **SoulboundNFT** | `0x65e4c8bb0270bC60Af5DCe60CE6323f2BA720171` | ✅ Verified |
-| **PropertyEscrow** | `0x778269B6Fb31089714d4cd3FaC63d0ab602e9E8d` | ✅ Verified |
+- **AdminContract**: `0x5FbDB2315678afecb367f032d93F642f64180aa3`
+- **UserRegistry**: `0xe7f1725E7734CE288F8367e1Bb143E90bb3F0512`
+- **PropertyNFTFactory**: `0x9fE46736679d2D9a65F0992F2272dE9f3c7fa6e0`
+- **ReviewRegistry**: `0xCf7Ed3AccA5a467e9e704C703E8D87F634fB0Fc9`
+- **SoulboundNFT**: `0xDc64a140Aa3E981100a9becA4E685f962f0cF6C9`
+- **PropertyEscrow**: `0x5FC8d32690cc91D4c39d9d3abcBD16989F875707`
 
 **📋 Full deployment details**: [DEPLOYMENT_SUMMARY.md](./DEPLOYMENT_SUMMARY.md)
 
@@ -117,23 +116,12 @@ npm test
 
 ## 🚀 Deployment
 
-### Deployed Contracts (Base Sepolia)
+### Deployment Status
 
-All contracts have been successfully deployed and verified on Base Sepolia testnet:
+Contracts will be deployed to Mantle Sepolia Testnet (Chain ID: 5003)
 
-| Contract | Address | BaseScan | Status |
-|----------|---------|----------|--------|
-| **AdminContract** | `0x48866a7aB8aDb8F2Eb8708BBc69eafB8BA3C7365` | [View Code](https://sepolia.basescan.org/address/0x48866a7aB8aDb8F2Eb8708BBc69eafB8BA3C7365#code) | ✅ Verified |
-| **UserRegistry** | `0xB1bcc419096785a0e43d441F81b69f539773d299` | [View Code](https://sepolia.basescan.org/address/0xB1bcc419096785a0e43d441F81b69f539773d299#code) | ✅ Verified |
-| **PropertyNFTFactory** | `0x667D663405AeeB90d6Af2D31f21C5C2bE809A5e0` | [View Code](https://sepolia.basescan.org/address/0x667D663405AeeB90d6Af2D31f21C5C2bE809A5e0#code) | ✅ Verified |
-| **ReviewRegistry** | `0x78702F5e1fC795C2bb23f2B342bcFB57BB8dCaC1` | [View Code](https://sepolia.basescan.org/address/0x78702F5e1fC795C2bb23f2B342bcFB57BB8dCaC1#code) | ✅ Verified |
-| **SoulboundNFT** | `0x65e4c8bb0270bC60Af5DCe60CE6323f2BA720171` | [View Code](https://sepolia.basescan.org/address/0x65e4c8bb0270bC60Af5DCe60CE6323f2BA720171#code) | ✅ Verified |
-| **PropertyEscrow** | `0x778269B6Fb31089714d4cd3FaC63d0ab602e9E8d` | [View Code](https://sepolia.basescan.org/address/0x778269B6Fb31089714d4cd3FaC63d0ab602e9E8d#code) | ✅ Verified |
-
-**Network**: Base Sepolia (Chain ID: 84532)  
-**Deployer**: `0x0eE1F2b663547dAa487F57C517C7563AdCf86da0`  
-**Deployment Date**: August 14, 2024  
-**Status**: All contracts deployed and verified ✅
+**Network**: Mantle Sepolia Testnet (Chain ID: 5003)  
+**Status**: Ready for deployment ✅
 
 ### Deployment Commands
 
@@ -143,19 +131,14 @@ npx hardhat node
 npx hardhat run scripts/deploy.ts --network localhost
 ```
 
-2. **Deploy to Base Sepolia testnet**
+2. **Deploy to Mantle Sepolia testnet**
 ```bash
-npm run deploy:base-sepolia
+npm run deploy:mantle-sepolia
 ```
 
-3. **Deploy to Base mainnet**
+3. **Deploy and verify in one command**
 ```bash
-npm run deploy:base
-```
-
-4. **Deploy and verify in one command**
-```bash
-npm run deploy-and-verify:base-sepolia
+npm run deploy-and-verify:mantle-sepolia
 ```
 
 ## 🔧 Configuration
@@ -169,12 +152,10 @@ Create a `.env` file with the following variables:
 PRIVATE_KEY=your_private_key_here
 
 # Network RPC URLs
-BASE_RPC_URL=https://mainnet.base.org
-BASE_SEPOLIA_RPC_URL=https://sepolia.base.org
-LISK_RPC_URL=https://rpc.lisk.com
+MANTLE_SEPOLIA_RPC_URL=https://rpc.sepolia.mantle.xyz
 
 # Block Explorer API Keys
-BASESCAN_API_KEY=your_basescan_api_key_here
+MANTLE_EXPLORER_API_KEY=your_mantle_explorer_api_key_here
 
 # IPFS Configuration
 PINATA_API_KEY=your_pinata_api_key_here
@@ -184,9 +165,7 @@ PINATA_SECRET_KEY=your_pinata_secret_key_here
 ### Network Configuration
 
 The contracts are configured to work on:
-- **Base** (Ethereum L2) - Mainnet
-- **Base Sepolia** - Testnet
-- **Lisk** (Ethereum L2) - Alternative network
+- **Mantle Sepolia** (Ethereum L2) - Testnet (Chain ID: 5003)
 
 ## 📖 Usage Examples
 

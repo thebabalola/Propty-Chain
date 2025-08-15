@@ -70,27 +70,6 @@ export default function HomePage() {
         ref={heroRef}
         className="relative min-h-screen flex items-center overflow-hidden section-gradient-primary theme-transition"
       >
-        {/* Slow-moving background elements */}
-        <div className="absolute inset-0 overflow-hidden">
-          {/* Drifting building outlines */}
-          <div className="absolute top-20 animate-drift-left opacity-20">
-            <Building2 className="w-32 h-32 text-ivory-mist" />
-          </div>
-          <div className="absolute top-60 animate-drift-right opacity-20">
-            <Home className="w-24 h-24 text-antique-gold" />
-          </div>
-          <div className="absolute top-40 animate-drift-left opacity-20" style={{ animationDelay: "8s" }}>
-            <MapPin className="w-20 h-20 text-ivory-mist" />
-          </div>
-
-          {/* Floating property shapes */}
-          <div className="absolute top-32 left-1/4 animate-float-building">
-            <div className="w-16 h-20 bg-gradient-to-t from-antique-gold/30 to-ivory-mist/30 rounded-t-lg border border-ivory-mist/30"></div>
-          </div>
-          <div className="absolute bottom-40 right-1/4 animate-float-building" style={{ animationDelay: "3s" }}>
-            <div className="w-12 h-16 bg-gradient-to-t from-ivory-mist/30 to-antique-gold/30 rounded-t-lg border border-ivory-mist/30"></div>
-          </div>
-        </div>
 
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10">
           <div className="grid lg:grid-cols-2 gap-12 items-center min-h-screen py-20">

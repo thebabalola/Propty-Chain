@@ -4,6 +4,7 @@ pragma solidity ^0.8.28;
 import "@openzeppelin/contracts/access/Ownable.sol";
 
 import "./UserRegistry.sol";
+import "./AdminContract.sol";
 
 // Manages property reviews, validation, and reporting system
 contract ReviewRegistry is Ownable {
@@ -51,6 +52,7 @@ contract ReviewRegistry is Ownable {
     
     // Contracts
     UserRegistry public userRegistry;
+    AdminContract public adminContract;
     
     // Events
     event ReviewSubmitted(
@@ -107,13 +109,14 @@ contract ReviewRegistry is Ownable {
     }
 
     modifier onlyAdmin() {
-        require(owner() == msg.sender, "Only admin can perform this action");
+        require(adminContract.isAdmin(msg.sender), "Only admin can perform this action");
         _;
     }
 
     // Constructor
-    constructor(address _userRegistry) Ownable(msg.sender) {
+    constructor(address _userRegistry, address payable _adminContract) Ownable(msg.sender) {
         userRegistry = UserRegistry(_userRegistry);
+        adminContract = AdminContract(_adminContract);
     }
 
     // Submit a property review

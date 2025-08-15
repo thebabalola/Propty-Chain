@@ -7,6 +7,7 @@ import "@openzeppelin/contracts/utils/ReentrancyGuard.sol";
 import "@openzeppelin/contracts/token/ERC721/IERC721.sol";
 import "./UserRegistry.sol";
 import "./PropertyNFTFactory.sol";
+import "./AdminContract.sol";
 
 // Handles secure property transactions with escrow functionality
 contract PropertyEscrow is Ownable, ReentrancyGuard {
@@ -57,6 +58,7 @@ contract PropertyEscrow is Ownable, ReentrancyGuard {
     // Contracts
     UserRegistry public userRegistry;
     PropertyNFTFactory public propertyFactory;
+    AdminContract public adminContract;
     
     // Events
     event EscrowCreated(
@@ -135,14 +137,15 @@ contract PropertyEscrow is Ownable, ReentrancyGuard {
     }
 
     modifier onlyAdmin() {
-        require(owner() == msg.sender, "Only admin can perform this action");
+        require(adminContract.isAdmin(msg.sender), "Only admin can perform this action");
         _;
     }
 
     // Constructor
-    constructor(address _userRegistry, address _propertyFactory) Ownable(msg.sender) {
+    constructor(address _userRegistry, address _propertyFactory, address payable _adminContract) Ownable(msg.sender) {
         userRegistry = UserRegistry(_userRegistry);
         propertyFactory = PropertyNFTFactory(_propertyFactory);
+        adminContract = AdminContract(_adminContract);
     }
 
     // Create a new escrow for property purchase
@@ -170,7 +173,7 @@ contract PropertyEscrow is Ownable, ReentrancyGuard {
             propertyId: propertyId,
             buyer: msg.sender,
             seller: seller,
-            amount: property.price,
+            amount: property.currentMarketPrice, // Use current market price from PropertyNFTFactory
             deadline: block.timestamp + escrowDuration,
             status: EscrowStatus.PENDING,
             createdAt: block.timestamp,
@@ -183,7 +186,7 @@ contract PropertyEscrow is Ownable, ReentrancyGuard {
         escrows[escrowId] = newEscrow;
         propertyToEscrow[propertyId] = escrowId;
 
-        emit EscrowCreated(escrowId, propertyId, msg.sender, seller, property.price);
+        emit EscrowCreated(escrowId, propertyId, msg.sender, seller, property.currentMarketPrice);
     }
 
     // Fund the escrow with payment
@@ -198,26 +201,68 @@ contract PropertyEscrow is Ownable, ReentrancyGuard {
     }
 
     // Approve escrow completion
-    function approveEscrow(uint256 escrowId) external onlyEscrowParticipant(escrowId) onlyActiveEscrow(escrowId) {
+    function approveEscrow(uint256 escrowId) external onlyEscrowParticipant(escrowId) {
         Escrow storage escrow = escrows[escrowId];
-        
+        require(escrow.status == EscrowStatus.FUNDED, "Escrow not funded");
+        require(block.timestamp <= escrow.deadline, "Escrow deadline passed");
+
         if (msg.sender == escrow.buyer) {
             escrow.buyerApproved = true;
         } else if (msg.sender == escrow.seller) {
             escrow.sellerApproved = true;
         }
 
-        // Complete escrow if both parties approve
+        // Complete escrow if both parties approved
         if (escrow.buyerApproved && escrow.sellerApproved) {
-            _completeEscrow(escrowId);
+            completeEscrow(escrowId);
         }
     }
 
+    // Complete the escrow transaction
+    function completeEscrow(uint256 escrowId) internal {
+        Escrow storage escrow = escrows[escrowId];
+        require(escrow.status == EscrowStatus.FUNDED, "Escrow not funded");
+        require(escrow.buyerApproved && escrow.sellerApproved, "Both parties must approve");
+
+        escrow.status = EscrowStatus.COMPLETED;
+        escrow.completedAt = block.timestamp;
+
+        // Calculate platform fee
+        uint256 platformFee = (escrow.amount * platformFeePercentage) / 100;
+        uint256 sellerAmount = escrow.amount - platformFee;
+
+        // Transfer funds
+        payable(escrow.seller).transfer(sellerAmount);
+        payable(owner()).transfer(platformFee);
+
+        // Transfer property NFT
+        propertyFactory.transferFrom(escrow.seller, escrow.buyer, escrow.propertyId);
+
+        emit EscrowCompleted(escrowId, escrow.buyer, escrow.seller, escrow.amount);
+    }
+
+    // Cancel escrow (only if not funded)
+    function cancelEscrow(uint256 escrowId, string memory reason) external onlyEscrowParticipant(escrowId) {
+        Escrow storage escrow = escrows[escrowId];
+        require(escrow.status == EscrowStatus.PENDING, "Escrow not pending");
+
+        escrow.status = EscrowStatus.CANCELLED;
+
+        // Refund buyer if escrow was funded
+        if (escrow.status == EscrowStatus.FUNDED) {
+            payable(escrow.buyer).transfer(escrow.amount);
+            emit EscrowRefunded(escrowId, escrow.buyer, escrow.amount);
+        }
+
+        emit EscrowCancelled(escrowId, msg.sender, reason);
+    }
+
     // Raise a dispute
-    function raiseDispute(uint256 escrowId, string memory reason) external onlyEscrowParticipant(escrowId) onlyActiveEscrow(escrowId) {
+    function raiseDispute(uint256 escrowId, string memory reason) external onlyEscrowParticipant(escrowId) {
+        Escrow storage escrow = escrows[escrowId];
+        require(escrow.status == EscrowStatus.FUNDED, "Escrow not funded");
         require(bytes(reason).length > 0, "Dispute reason cannot be empty");
 
-        Escrow storage escrow = escrows[escrowId];
         escrow.status = EscrowStatus.DISPUTED;
 
         Dispute memory newDispute = Dispute({
@@ -235,43 +280,36 @@ contract PropertyEscrow is Ownable, ReentrancyGuard {
 
     // Resolve dispute (admin only)
     function resolveDispute(uint256 escrowId, bool buyerWins) external onlyAdmin {
-        require(escrows[escrowId].status == EscrowStatus.DISPUTED, "Escrow not in dispute");
-        require(!disputes[escrowId].resolved, "Dispute already resolved");
+        Dispute storage dispute = disputes[escrowId];
+        require(!dispute.resolved, "Dispute already resolved");
 
-        disputes[escrowId].resolved = true;
+        Escrow storage escrow = escrows[escrowId];
+        require(escrow.status == EscrowStatus.DISPUTED, "Escrow not disputed");
+
+        dispute.resolved = true;
 
         if (buyerWins) {
-            _refundEscrow(escrowId);
+            // Refund buyer
+            payable(escrow.buyer).transfer(escrow.amount);
+            escrow.status = EscrowStatus.REFUNDED;
+            emit EscrowRefunded(escrowId, escrow.buyer, escrow.amount);
         } else {
-            _completeEscrow(escrowId);
+            // Complete escrow in favor of seller
+            completeEscrow(escrowId);
         }
 
         emit DisputeResolved(escrowId, msg.sender, buyerWins);
     }
 
-    // Cancel escrow (only before funding)
-    function cancelEscrow(uint256 escrowId, string memory reason) external onlyEscrowParticipant(escrowId) onlyPendingEscrow(escrowId) {
-        Escrow storage escrow = escrows[escrowId];
-        escrow.status = EscrowStatus.CANCELLED;
-        propertyToEscrow[escrow.propertyId] = 0;
-
-        emit EscrowCancelled(escrowId, msg.sender, reason);
-    }
-
     // Get escrow details
     function getEscrow(uint256 escrowId) external view returns (Escrow memory) {
-        require(escrowId > 0 && escrowId <= _escrowIds, "Invalid escrow ID");
+        require(escrowId > 0 && escrowId <= _escrowIds, "Escrow does not exist");
         return escrows[escrowId];
     }
 
     // Get dispute details
     function getDispute(uint256 escrowId) external view returns (Dispute memory) {
         return disputes[escrowId];
-    }
-
-    // Get escrow ID for a property
-    function getEscrowForProperty(uint256 propertyId) external view returns (uint256) {
-        return propertyToEscrow[propertyId];
     }
 
     // Get total number of escrows
@@ -292,60 +330,15 @@ contract PropertyEscrow is Ownable, ReentrancyGuard {
         emit ConfigUpdated("disputeDuration", oldDuration, newDuration);
     }
 
-    function updatePlatformFeePercentage(uint256 newFeePercentage) external onlyAdmin {
-        require(newFeePercentage <= 10, "Fee cannot exceed 10%");
-        uint256 oldFee = platformFeePercentage;
-        platformFeePercentage = newFeePercentage;
-        emit ConfigUpdated("platformFeePercentage", oldFee, newFeePercentage);
+    function updatePlatformFeePercentage(uint256 newPercentage) external onlyAdmin {
+        require(newPercentage <= 10, "Platform fee cannot exceed 10%");
+        uint256 oldPercentage = platformFeePercentage;
+        platformFeePercentage = newPercentage;
+        emit ConfigUpdated("platformFeePercentage", oldPercentage, newPercentage);
     }
 
-    // Emergency function to handle stuck escrows (admin only)
-    function emergencyRefund(uint256 escrowId) external onlyAdmin {
-        Escrow storage escrow = escrows[escrowId];
-        require(escrow.status == EscrowStatus.FUNDED, "Escrow not funded");
-        require(block.timestamp > escrow.deadline + disputeDuration, "Escrow not expired");
-
-        _refundEscrow(escrowId);
-    }
-
-    // Internal function to complete escrow
-    function _completeEscrow(uint256 escrowId) internal {
-        Escrow storage escrow = escrows[escrowId];
-        escrow.status = EscrowStatus.COMPLETED;
-        escrow.completedAt = block.timestamp;
-
-        // Calculate platform fee
-        uint256 platformFee = (escrow.amount * platformFeePercentage) / 100;
-        uint256 sellerAmount = escrow.amount - platformFee;
-
-        // Transfer property NFT
-        propertyFactory.transferFrom(escrow.seller, escrow.buyer, escrow.propertyId);
-
-        // Transfer funds
-        payable(escrow.seller).transfer(sellerAmount);
-        payable(owner()).transfer(platformFee);
-
-        // Clear property escrow mapping
-        propertyToEscrow[escrow.propertyId] = 0;
-
-        // Update user reputation
-        userRegistry.updateReputation(escrow.buyer, 5, 0); // Positive reputation for successful transaction
-        userRegistry.updateReputation(escrow.seller, 5, 0);
-
-        emit EscrowCompleted(escrowId, escrow.buyer, escrow.seller, escrow.amount);
-    }
-
-    // Internal function to refund escrow
-    function _refundEscrow(uint256 escrowId) internal {
-        Escrow storage escrow = escrows[escrowId];
-        escrow.status = EscrowStatus.REFUNDED;
-
-        // Refund buyer
-        payable(escrow.buyer).transfer(escrow.amount);
-
-        // Clear property escrow mapping
-        propertyToEscrow[escrow.propertyId] = 0;
-
-        emit EscrowRefunded(escrowId, escrow.buyer, escrow.amount);
+    // Withdraw platform fees (admin only)
+    function withdrawFees() external onlyAdmin {
+        payable(owner()).transfer(address(this).balance);
     }
 }

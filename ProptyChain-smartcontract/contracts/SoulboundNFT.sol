@@ -6,6 +6,7 @@ import "@openzeppelin/contracts/token/ERC721/extensions/ERC721URIStorage.sol";
 import "@openzeppelin/contracts/access/Ownable.sol";
 
 import "./UserRegistry.sol";
+import "./AdminContract.sol";
 
 // Soulbound NFT contract for achievement-based rewards
 // Soulbound NFTs cannot be transferred - they represent reputation and achievements
@@ -50,6 +51,7 @@ contract SoulboundNFT is ERC721, ERC721URIStorage, Ownable {
     
     // Contracts
     UserRegistry public userRegistry;
+    AdminContract public adminContract;
     
     // Events
     event BadgeAwarded(
@@ -91,13 +93,14 @@ contract SoulboundNFT is ERC721, ERC721URIStorage, Ownable {
     }
 
     modifier onlyAdmin() {
-        require(owner() == msg.sender, "Only admin can perform this action");
+        require(adminContract.isAdmin(msg.sender), "Only admin can perform this action");
         _;
     }
 
     // Constructor
-    constructor(address _userRegistry) ERC721("ProptyChain Soulbound Badge", "PSB") Ownable(msg.sender) {
+    constructor(address _userRegistry, address payable _adminContract) ERC721("ProptyChain Soulbound Badge", "PSB") Ownable(msg.sender) {
         userRegistry = UserRegistry(_userRegistry);
+        adminContract = AdminContract(_adminContract);
         _initializeBadgeRequirements();
     }
 
@@ -184,7 +187,7 @@ contract SoulboundNFT is ERC721, ERC721URIStorage, Ownable {
         });
     }
 
-    // Award a badge to a user (called by other contracts or admin)
+    // Award a badge to a user (admin only - for special cases)
     function awardBadge(
         address recipient,
         BadgeType badgeType,
@@ -195,6 +198,26 @@ contract SoulboundNFT is ERC721, ERC721URIStorage, Ownable {
         require(level >= 1 && level <= 5, "Invalid badge level");
         require(bytes(metadata).length > 0, "Metadata cannot be empty");
 
+        _mintBadge(recipient, badgeType, metadata, level);
+    }
+
+    // User-initiated badge minting
+    function mintBadge(BadgeType badgeType, string memory metadata) external onlyRegistered onlyValidBadgeType(badgeType) {
+        require(bytes(metadata).length > 0, "Metadata cannot be empty");
+        require(checkBadgeEligibility(msg.sender, badgeType), "Not eligible for this badge");
+        require(userBadgeCount[msg.sender][badgeType] == 0, "Already have this badge type");
+
+        // Mint badge with level 1 (default)
+        _mintBadge(msg.sender, badgeType, metadata, 1);
+    }
+
+    // Internal function to mint badge
+    function _mintBadge(
+        address recipient,
+        BadgeType badgeType,
+        string memory metadata,
+        uint256 level
+    ) internal {
         _badgeIds++;
         uint256 badgeId = _badgeIds;
 
@@ -221,10 +244,10 @@ contract SoulboundNFT is ERC721, ERC721URIStorage, Ownable {
 
     // Check if user qualifies for a badge
     function checkBadgeEligibility(address userAddress, BadgeType badgeType) 
-        external 
+        public 
         view 
         onlyValidBadgeType(badgeType) 
-        returns (bool) 
+        returns (bool)
     {
         if (!userRegistry.isUserActive(userAddress)) return false;
 
@@ -293,11 +316,53 @@ contract SoulboundNFT is ERC721, ERC721URIStorage, Ownable {
         uint256 minDaysActive
     ) external onlyAdmin onlyValidBadgeType(badgeType) {
         BadgeRequirements storage requirements = badgeRequirements[badgeType];
+        
+        // Store old values for event
+        uint256 oldMinProperties = requirements.minProperties;
+        uint256 oldMinReviews = requirements.minReviews;
+        uint256 oldMinReputation = requirements.minReputation;
+        uint256 oldMinTransactions = requirements.minTransactions;
+        uint256 oldMinDaysActive = requirements.minDaysActive;
+        
+        // Update requirements
         requirements.minProperties = minProperties;
         requirements.minReviews = minReviews;
         requirements.minReputation = minReputation;
         requirements.minTransactions = minTransactions;
         requirements.minDaysActive = minDaysActive;
+
+        emit ConfigUpdated("badgeRequirements", uint256(badgeType), 1);
+    }
+
+    // Update individual requirement fields
+    function updateBadgeMinProperties(BadgeType badgeType, uint256 minProperties) external onlyAdmin onlyValidBadgeType(badgeType) {
+        uint256 oldValue = badgeRequirements[badgeType].minProperties;
+        badgeRequirements[badgeType].minProperties = minProperties;
+        emit ConfigUpdated("minProperties", oldValue, minProperties);
+    }
+
+    function updateBadgeMinReviews(BadgeType badgeType, uint256 minReviews) external onlyAdmin onlyValidBadgeType(badgeType) {
+        uint256 oldValue = badgeRequirements[badgeType].minReviews;
+        badgeRequirements[badgeType].minReviews = minReviews;
+        emit ConfigUpdated("minReviews", oldValue, minReviews);
+    }
+
+    function updateBadgeMinReputation(BadgeType badgeType, uint256 minReputation) external onlyAdmin onlyValidBadgeType(badgeType) {
+        uint256 oldValue = badgeRequirements[badgeType].minReputation;
+        badgeRequirements[badgeType].minReputation = minReputation;
+        emit ConfigUpdated("minReputation", oldValue, minReputation);
+    }
+
+    function updateBadgeMinTransactions(BadgeType badgeType, uint256 minTransactions) external onlyAdmin onlyValidBadgeType(badgeType) {
+        uint256 oldValue = badgeRequirements[badgeType].minTransactions;
+        badgeRequirements[badgeType].minTransactions = minTransactions;
+        emit ConfigUpdated("minTransactions", oldValue, minTransactions);
+    }
+
+    function updateBadgeMinDaysActive(BadgeType badgeType, uint256 minDaysActive) external onlyAdmin onlyValidBadgeType(badgeType) {
+        uint256 oldValue = badgeRequirements[badgeType].minDaysActive;
+        badgeRequirements[badgeType].minDaysActive = minDaysActive;
+        emit ConfigUpdated("minDaysActive", oldValue, minDaysActive);
     }
 
     // Get badge details
@@ -349,6 +414,73 @@ contract SoulboundNFT is ERC721, ERC721URIStorage, Ownable {
     // Get user's total badge count
     function getUserTotalBadgeCount(address userAddress) external view returns (uint256) {
         return userBadges[userAddress].length;
+    }
+
+    // Get user's progress towards a specific badge
+    function getUserBadgeProgress(address userAddress, BadgeType badgeType) 
+        external 
+        view 
+        onlyValidBadgeType(badgeType) 
+        returns (
+            uint256 currentProperties,
+            uint256 requiredProperties,
+            uint256 currentReviews,
+            uint256 requiredReviews,
+            uint256 currentReputation,
+            uint256 requiredReputation,
+            uint256 currentTransactions,
+            uint256 requiredTransactions,
+            uint256 currentDaysActive,
+            uint256 requiredDaysActive,
+            bool isEligible
+        ) 
+    {
+        if (!userRegistry.isUserActive(userAddress)) {
+            return (0, 0, 0, 0, 0, 0, 0, 0, 0, 0, false);
+        }
+
+        UserRegistry.User memory user = userRegistry.getUser(userAddress);
+        BadgeRequirements memory requirements = badgeRequirements[badgeType];
+
+        currentProperties = user.totalProperties;
+        requiredProperties = requirements.minProperties;
+        currentReviews = user.totalReviews;
+        requiredReviews = requirements.minReviews;
+        currentReputation = user.reputationScore;
+        requiredReputation = requirements.minReputation;
+        currentTransactions = 0; // Would need to be tracked separately
+        requiredTransactions = requirements.minTransactions;
+        currentDaysActive = (block.timestamp - user.registrationTimestamp) / 1 days;
+        requiredDaysActive = requirements.minDaysActive;
+
+        isEligible = checkBadgeEligibility(userAddress, badgeType);
+    }
+
+    // Get all badges user is eligible for
+    function getEligibleBadges(address userAddress) external view returns (BadgeType[] memory) {
+        if (!userRegistry.isUserActive(userAddress)) {
+            return new BadgeType[](0);
+        }
+
+        BadgeType[] memory eligibleBadges = new BadgeType[](8); // Max 8 badge types
+        uint256 eligibleCount = 0;
+
+        for (uint256 i = 0; i < 8; i++) {
+            BadgeType badgeType = BadgeType(i);
+            if (checkBadgeEligibility(userAddress, badgeType) && 
+                userBadgeCount[userAddress][badgeType] == 0) {
+                eligibleBadges[eligibleCount] = badgeType;
+                eligibleCount++;
+            }
+        }
+
+        // Resize array to actual count
+        BadgeType[] memory result = new BadgeType[](eligibleCount);
+        for (uint256 i = 0; i < eligibleCount; i++) {
+            result[i] = eligibleBadges[i];
+        }
+
+        return result;
     }
 
 
