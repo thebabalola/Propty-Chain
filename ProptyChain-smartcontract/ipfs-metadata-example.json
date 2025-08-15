@@ -1,0 +1,89 @@
+{
+  "name": "Luxury 3-Bedroom Apartment in Victoria Island",
+  "description": "Modern, fully furnished 3-bedroom apartment with ocean view, located in the prestigious Victoria Island area of Lagos. Features include a private balcony, modern kitchen, and 24/7 security.",
+  "image": "ipfs://QmMainPropertyImageHash",
+  "images": [
+    "ipfs://QmMainPropertyImageHash",
+    "ipfs://QmLivingRoomImageHash",
+    "ipfs://QmKitchenImageHash",
+    "ipfs://QmBedroom1ImageHash",
+    "ipfs://QmBedroom2ImageHash",
+    "ipfs://QmBedroom3ImageHash",
+    "ipfs://QmBathroomImageHash",
+    "ipfs://QmBalconyImageHash"
+  ],
+  "attributes": [
+    {
+      "trait_type": "Property Type",
+      "value": "RESIDENTIAL"
+    },
+    {
+      "trait_type": "Location",
+      "value": "Victoria Island, Lagos"
+    },
+    {
+      "trait_type": "Bedrooms",
+      "value": "3"
+    },
+    {
+      "trait_type": "Bathrooms",
+      "value": "2"
+    },
+    {
+      "trait_type": "Square Feet",
+      "value": "1500"
+    },
+    {
+      "trait_type": "Year Built",
+      "value": "2020"
+    },
+    {
+      "trait_type": "Furnished",
+      "value": "Yes"
+    },
+    {
+      "trait_type": "Parking",
+      "value": "2 Spaces"
+    },
+    {
+      "trait_type": "Security",
+      "value": "24/7"
+    }
+  ],
+  "external_url": "https://proptychain.com/property/123",
+  "property_details": {
+    "amenities": [
+      "Swimming Pool",
+      "Gym",
+      "Security System",
+      "Air Conditioning",
+      "Modern Kitchen",
+      "Private Balcony",
+      "Parking Space",
+      "Elevator"
+    ],
+    "payment_terms": "50% down payment, 50% on completion",
+    "legal_documents": "ipfs://QmLegalDocumentsHash",
+    "virtual_tour": "ipfs://QmVirtualTourHash",
+    "floor_plan": "ipfs://QmFloorPlanHash"
+  },
+  "location_details": {
+    "address": "123 Victoria Island Drive, Lagos, Nigeria",
+    "coordinates": {
+      "latitude": "6.4281",
+      "longitude": "3.4219"
+    },
+    "neighborhood": "Victoria Island",
+    "city": "Lagos",
+    "state": "Lagos",
+    "country": "Nigeria"
+  },
+  "financial_details": {
+    "price_currency": "ETH",
+    "price_in_eth": "5.0",
+    "price_in_usd": "15000",
+    "monthly_rent": "0.5 ETH",
+    "utilities_included": false,
+    "maintenance_fee": "0.1 ETH/month"
+  }
+}
